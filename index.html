@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spojovačka - Památky</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; user-select: none; }
+        h1 { color: #333; margin-bottom: 5px; text-align: center; }
+        .score { font-size: 18px; margin-bottom: 20px; }
+        
+        /* Dva sloupce: vlevo obrázky, vpravo texty */
+        .game-container { display: flex; gap: 40px; width: 100%; max-width: 600px; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        
+        .item { background: white; border: 2px solid #0070f3; border-radius: 8px; padding: 8px; display: flex; align-items: center; justify-content: center; min-height: 70px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: background-color 0.3s, border-color 0.3s; text-align: center; font-weight: bold; font-size: 14px; box-sizing: border-box; }
+        .item:active { cursor: grabbing; }
+        
+        .item img { width: 100%; max-height: 60px; object-fit: cover; border-radius: 4px; pointer-events: none; }
+        
+        /* Stavy pro ověření */
+        .selected { background-color: #e6f0ff; border-color: #0056b3; }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; opacity: 0; transform: scale(0.9); transition: all 0.5s ease; pointer-events: none; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; animation: shake 0.3s ease-in-out; }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* Tlačítko Reset */
+        .reset-btn { margin-top: 25px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; background-color: #28a745; border: none; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s; }
+        .reset-btn:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+    <h1>Spojovačka: Památky</h1>
+    <div class="score">Počet pokusů: <span id="moves">0</span></div>
+    
+    <div class="game-container">
+        <!-- Sloupec s obrázky -->
+        <div class="column" id="left-column"></div>
+        <!-- Sloupec s texty -->
+        <div class="column" id="right-column"></div>
+    </div>
+    
+    <button class="reset-btn" onclick="resetGame()">Hrát znovu</button>
+
+    <script>
+        // DATA PAMÁTEK
+        const cardsData = [
+            { id: 1, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000135-3bebf3bec1/1000042727.webp', text: 'Pražský hrad' },
+            { id: 2, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000137-a5b94a5b96/1000042728.webp', text: 'Orlík' },
+            { id: 3, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000139-e1822e1825/1000042729.webp', text: 'Karlštejn' },
+            { id: 4, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000141-6418464186/1000042730.webp', text: 'Zvíkov' },
+            { id: 5, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000001-ef096ef098/1000023276.webp', text: 'Hluboká' },
+            { id: 6, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000143-99b8c99b8e/1000042732.webp', text: 'Lednice' },
+            { id: 7, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000147-94a2a94a2c/1000042853.webp', text: 'Jindřichův Hradec' },
+            { id: 8, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000145-854298542a/1000042733.webp', text: 'Český Krumlov' },
+            
+            { id: 9, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000149-29e0329e05/1000042734.webp', text: 'Pravčická brána' },
+            { id: 10, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000151-8b47d8b47f/1000042735.webp', text: 'Tiské stěny' },
+            { id: 11, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000153-7901b7901d/1000042736.webp', text: 'Hrubá skála' },
+            { id: 12, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000155-5ad5d5ad60/1000042854.webp', text: 'Pálavské vrchy' },
+            { id: 13, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000157-991c4991c6/1000042737.webp', text: 'Švihov' },
+            { id: 14, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000159-02bea02beb/1000042738.webp', text: 'Rábí' },
+            { id: 15, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000161-37b5237b54/1000042739.webp', text: 'Kost' },
+            { id: 16, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000163-c6e9cc6e9e/1000042740.webp', text: 'Trosky' },
+            { id: 17, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000165-54aad54aaf/1000042855.webp', text: 'Kutná Hora - sv. Barbora' },
+            { id: 18, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000167-cf0facf0fc/1000042856.webp', text: 'Chrám svatého Víta' },
+            { id: 19, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000169-41a7a41a7c/1000042741.webp', text: 'Orloj - Praha' },
+            { id: 20, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000171-6b9a06b9a3/1000042857.webp', text: 'Orloj - Olomouc' }
+        ];
+
+        // Hra by byla s 20 položkami moc dlouhá na obrazovku, proto pro každé kolo náhodně vybereme 6 dvojic
+        const ITEMS_PER_GAME = 6; 
+        
+        let selectedLeft = null;
+        let selectedRight = null;
+        let moves = 0;
+        let activePairsCount = ITEMS_PER_GAME;
+
+        function initGame() {
+            moves = 0;
+            activePairsCount = ITEMS_PER_GAME;
+            document.getElementById('moves').innerText = moves;
+            
+            const leftColumn = document.getElementById('left-column');
+            const rightColumn = document.getElementById('right-column');
+            leftColumn.innerHTML = '';
+            rightColumn.innerHTML = '';
+
+            // 1. Vybereme náhodných 6 památek ze seznamu 20
+            const shuffledData = [...cardsData].sort(() => 0.5 - Math.random());
+            const selectedData = shuffledData.slice(0, ITEMS_PER_GAME);
+
+            // 2. Vytvoříme samostatně zamíchané sloupce (aby obrázek a text nebyly vedle sebe)
+            const leftItems = [...selectedData].sort(() => 0.5 - Math.random());
+            const rightItems = [...selectedData].sort(() => 0.5 - Math.random());
+
+            // 3. Vykreslení levého sloupce (Obrázky)
+            leftItems.forEach(data => {
+                const div = document.createElement('div');
+                div.classList.add('item');
+                div.dataset.id = data.id;
+                
+                if (data.img.startsWith('ODKAZ_NA')) {
+                    div.innerText = `[Obrázek ${data.id}]`;
+                } else {
+                    const img = document.createElement('img');
+                    img.src = data.img;
+                    div.appendChild(img);
+                }
+                
+                div.addEventListener('click', () => selectItem(div, 'left'));
+                leftColumn.appendChild(div);
+            });
+
+            // 4. Vykreslení pravého sloupce (Texty)
+            rightItems.forEach(data => {
+                const div = document.createElement('div');
+                div.classList.add('item');
+                div.dataset.id = data.id;
+                div.innerText = data.text;
+                div.addEventListener('click', () => selectItem(div, 'right'));
+                rightColumn.appendChild(div);
+            });
+        }
+
+        function selectItem(element, column) {
+            // Zrušení předchozího výběru ve stejném sloupci
+            if (column === 'left') {
+                if (selectedLeft) selectedLeft.classList.remove('selected');
+                selectedLeft = element;
+            } else {
+                if (selectedRight) selectedRight.classList.remove('selected');
+                selectedRight = element;
+            }
+            
+            element.classList.add('selected');
+
+            // Pokud jsou vybrány obě strany, zkontrolujeme shodu
+            if (selectedLeft && selectedRight) {
+                moves++;
+                document.getElementById('moves').innerText = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const leftId = selectedLeft.dataset.id;
+            const rightId = selectedRight.dataset.id;
+            
+            const itemL = selectedLeft;
+            const itemR = selectedRight;
+
+            if (leftId === rightId) {
+                // SPRÁVNĚ
+                itemL.classList.add('correct');
+                itemR.classList.add('correct');
+                activePairsCount--;
+                
+                if (activePairsCount === 0) {
+                    setTimeout(() => {
+                        alert(`Skvělé! Spojili jste všechny dvojice na ${moves} pokusů.`);
+                    }, 600);
+                }
+            } else {
+                // ŠPATNĚ
+                itemL.classList.add('incorrect');
+                itemR.classList.add('incorrect');
+                
+                setTimeout(() => {
+                    itemL.classList.remove('incorrect', 'selected');
+                    itemR.classList.remove('incorrect', 'selected');
+                }, 400);
+            }
+
+            // Reset výběru pro další tah
+            selectedLeft = null;
+            selectedRight = null;
+        }
+
+        function resetGame() {
+            selectedLeft = null;
+            selectedRight = null;
+            initGame();
+        }
+
+        // Spuštění při načtení
+        initGame();
+    </script>
+</body>
+</html>
