@@ -10,17 +10,18 @@
         .score { font-size: 18px; margin-bottom: 20px; }
         
         /* Dva sloupce: vlevo obrázky, vpravo texty */
-        .game-container { display: flex; gap: 40px; width: 100%; max-width: 600px; }
-        .column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .game-container { display: flex; gap: 30px; width: 100%; max-width: 750px; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 12px; }
         
-        .item { background: white; border: 2px solid #0070f3; border-radius: 8px; padding: 8px; display: flex; align-items: center; justify-content: center; min-height: 70px; cursor: grab; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: background-color 0.3s, border-color 0.3s; text-align: center; font-weight: bold; font-size: 14px; box-sizing: border-box; }
-        .item:active { cursor: grabbing; }
+        /* Zvětšené kartičky s dostatkem prostoru */
+        .item { background: white; border: 2px solid #0070f3; border-radius: 10px; padding: 6px; display: flex; align-items: center; justify-content: center; min-height: 110px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.06); transition: background-color 0.2s, border-color 0.2s, transform 0.2s, opacity 0.5s; text-align: center; font-weight: bold; font-size: 15px; box-sizing: border-box; }
         
-        .item img { width: 100%; max-height: 60px; object-fit: cover; border-radius: 4px; pointer-events: none; }
+        /* Velký obdélníkový rámeček pro obrázek (poměr 4:3 jako pohlednice) */
+        .item img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; pointer-events: none; }
         
         /* Stavy pro ověření */
-        .selected { background-color: #e6f0ff; border-color: #0056b3; }
-        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; opacity: 0; transform: scale(0.9); transition: all 0.5s ease; pointer-events: none; }
+        .selected { background-color: #e6f0ff; border-color: #0056b3; transform: scale(1.02); }
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; color: #155724; opacity: 0; transform: scale(0.9); pointer-events: none; }
         .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; animation: shake 0.3s ease-in-out; }
         
         @keyframes shake {
@@ -30,7 +31,7 @@
         }
 
         /* Tlačítko Reset */
-        .reset-btn { margin-top: 25px; padding: 12px 24px; font-size: 16px; font-weight: bold; color: white; background-color: #28a745; border: none; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s; }
+        .reset-btn { margin-top: 30px; padding: 12px 28px; font-size: 16px; font-weight: bold; color: white; background-color: #28a745; border: none; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s; }
         .reset-btn:hover { background-color: #218838; }
     </style>
 </head>
@@ -74,7 +75,6 @@
             { id: 20, img: 'https://ffe62a8958.cbaul-cdnwnd.com/6db8bb8c0bee1e71b39eb24bc2246e14/200000171-6b9a06b9a3/1000042857.webp', text: 'Orloj - Olomouc' }
         ];
 
-        // Hra by byla s 20 položkami moc dlouhá na obrazovku, proto pro každé kolo náhodně vybereme 6 dvojic
         const ITEMS_PER_GAME = 6; 
         
         let selectedLeft = null;
@@ -92,15 +92,12 @@
             leftColumn.innerHTML = '';
             rightColumn.innerHTML = '';
 
-            // 1. Vybereme náhodných 6 památek ze seznamu 20
             const shuffledData = [...cardsData].sort(() => 0.5 - Math.random());
             const selectedData = shuffledData.slice(0, ITEMS_PER_GAME);
 
-            // 2. Vytvoříme samostatně zamíchané sloupce (aby obrázek a text nebyly vedle sebe)
             const leftItems = [...selectedData].sort(() => 0.5 - Math.random());
             const rightItems = [...selectedData].sort(() => 0.5 - Math.random());
 
-            // 3. Vykreslení levého sloupce (Obrázky)
             leftItems.forEach(data => {
                 const div = document.createElement('div');
                 div.classList.add('item');
@@ -118,7 +115,6 @@
                 leftColumn.appendChild(div);
             });
 
-            // 4. Vykreslení pravého sloupce (Texty)
             rightItems.forEach(data => {
                 const div = document.createElement('div');
                 div.classList.add('item');
@@ -130,7 +126,6 @@
         }
 
         function selectItem(element, column) {
-            // Zrušení předchozího výběru ve stejném sloupci
             if (column === 'left') {
                 if (selectedLeft) selectedLeft.classList.remove('selected');
                 selectedLeft = element;
@@ -141,7 +136,6 @@
             
             element.classList.add('selected');
 
-            // Pokud jsou vybrány obě strany, zkontrolujeme shodu
             if (selectedLeft && selectedRight) {
                 moves++;
                 document.getElementById('moves').innerText = moves;
@@ -157,7 +151,6 @@
             const itemR = selectedRight;
 
             if (leftId === rightId) {
-                // SPRÁVNĚ
                 itemL.classList.add('correct');
                 itemR.classList.add('correct');
                 activePairsCount--;
@@ -168,7 +161,6 @@
                     }, 600);
                 }
             } else {
-                // ŠPATNĚ
                 itemL.classList.add('incorrect');
                 itemR.classList.add('incorrect');
                 
@@ -178,7 +170,6 @@
                 }, 400);
             }
 
-            // Reset výběru pro další tah
             selectedLeft = null;
             selectedRight = null;
         }
@@ -189,7 +180,6 @@
             initGame();
         }
 
-        // Spuštění při načtení
         initGame();
     </script>
 </body>
